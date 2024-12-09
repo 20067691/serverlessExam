@@ -99,6 +99,22 @@ export class RestAPIStack extends cdk.Stack {
       }
     );
 
+    const getAwardsByMovieFn = new lambdanode.NodejsFunction(
+      this,
+      "GetAwardsByMovieFn",
+      {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        entry: `${__dirname}/../lambdas/getAwardsByMovie.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          AWARDS_TABLE_NAME: movieAwardsTable.tableName,
+          REGION: "eu-west-1",
+        },
+      }
+    );
+
     new custom.AwsCustomResource(this, "moviesddbInitData", {
       onCreate: {
         service: "DynamoDB",
@@ -142,6 +158,19 @@ export class RestAPIStack extends cdk.Stack {
 
     const movieEndpoint = moviesEndpoint.addResource("{movieId}");
 
+    const awardsEndpoint = api.root.addResource("awards");
+
+    const awardBodyEndpoint = awardsEndpoint.addResource("{awardBody}");
+
+    const awardMovieEndpoint = awardBodyEndpoint.addResource("movies");
+
+    const awardMovieIdEndpoint = awardMovieEndpoint.addResource("{movieId}");
+    
+    awardMovieIdEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getAwardsByMovieFn, { proxy: true })
+    );
+
     movieEndpoint.addMethod(
       "GET",
       new apig.LambdaIntegration(getMovieByIdFn, { proxy: true })
@@ -163,5 +192,6 @@ export class RestAPIStack extends cdk.Stack {
     moviesTable.grantReadWriteData(deleteMovieByIdFn);
     movieCastsTable.grantReadData(getMovieCastMembersFn);
     movieCastsTable.grantReadData(getMovieByIdFn);
+    movieAwardsTable.grantReadData(getAwardsByMovieFn)
   }
 }
