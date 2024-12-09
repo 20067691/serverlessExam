@@ -169,7 +169,7 @@ export class RestAPIStack extends cdk.Stack {
     awardMovieIdEndpoint.addMethod(
       "GET",
       new apig.LambdaIntegration(getAwardsByMovieFn, { proxy: true })
-    );
+    );  //Case sensenitive wehn using Postman https://ybh5mrdh6j.execute-api.eu-west-1.amazonaws.com/dev/awards/Oscars/movies/1234
 
     movieEndpoint.addMethod(
       "GET",
